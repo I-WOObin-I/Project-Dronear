@@ -17,7 +17,7 @@ class DroneDetectorApp extends StatefulWidget {
 class _DroneDetectorAppState extends State<DroneDetectorApp> {
   int _currentIndex = 0;
 
-  final _pages = [
+  final List<NavPage> _pages = [
     DetectionPage(),
     CalibrationPage(),
     ApiAlertPage(),
@@ -44,14 +44,15 @@ class _DroneDetectorAppState extends State<DroneDetectorApp> {
               droneProbability: 0.36,
               alertState: AlertState.standby,
             ),
-            Expanded(child: _pages[_currentIndex]),
+            Expanded(child: _pages[_currentIndex].page),
           ],
         ),
         bottomNavigationBar: BottomNavBar(
           selectedIndex: _currentIndex,
           onDestinationSelected: (index) =>
               setState(() => _currentIndex = index),
-          pages: _pages.map((page) => page as NavPage).toList(),
+          pageLabels: _pages.map((page) => page.pageLabel).toList(),
+          pageIcons: _pages.map((page) => page.pageIcon).toList(),
         ),
       ),
     );

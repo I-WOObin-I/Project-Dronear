@@ -4,13 +4,15 @@ import '../nav/page_nav_info.dart';
 class BottomNavBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
-  final List<NavPage> pages;
+  final List<String> pageLabels;
+  final List<IconData> pageIcons;
 
   const BottomNavBar({
     super.key,
     required this.selectedIndex,
     required this.onDestinationSelected,
-    required this.pages,
+    required this.pageLabels,
+    required this.pageIcons,
   });
 
   @override
@@ -19,11 +21,8 @@ class BottomNavBar extends StatelessWidget {
       selectedIndex: selectedIndex,
       onDestinationSelected: onDestinationSelected,
       destinations: [
-        for (final page in pages)
-          NavigationDestination(
-            icon: Icon(page.pageIcon),
-            label: page.pageLabel,
-          ),
+        for (int i = 0; i < pageLabels.length; i++)
+          NavigationDestination(icon: Icon(pageIcons[i]), label: pageLabels[i]),
       ],
     );
   }
