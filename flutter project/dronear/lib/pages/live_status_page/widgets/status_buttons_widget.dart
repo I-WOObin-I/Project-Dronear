@@ -3,8 +3,13 @@ import '../../../config/app_theme.dart';
 
 class StatusButtonsWidget extends StatelessWidget {
   final Map<String, bool> featureStatus; // true = armed, false = offline
+  final Map<String, Widget> alertPages;
 
-  const StatusButtonsWidget({super.key, required this.featureStatus});
+  const StatusButtonsWidget({
+    super.key,
+    required this.featureStatus,
+    required this.alertPages,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +36,6 @@ class StatusButtonsWidget extends StatelessWidget {
         children: statusList.map((status) {
           final key = status['key'] as String;
           final bool isArmed = featureStatus[key] ?? false;
-
           final Color color = isArmed ? Colors.orange : Colors.grey;
           final String statusText = isArmed ? 'ARMED' : 'off';
 
@@ -48,7 +52,14 @@ class StatusButtonsWidget extends StatelessWidget {
                 foregroundColor: color,
                 padding: AppTheme.buttonPadding,
               ),
-              onPressed: () {},
+              onPressed: () {
+                final Widget? targetPage = alertPages[key];
+                if (targetPage != null) {
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => targetPage));
+                }
+              },
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

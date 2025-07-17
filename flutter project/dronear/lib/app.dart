@@ -1,9 +1,7 @@
 import 'package:dronear/nav/page_nav_info.dart';
-import 'package:dronear/pages/api_alert_page.dart';
 import 'package:dronear/pages/calibration_page.dart';
 import 'package:dronear/pages/live_status_page/live_status_page.dart';
 import 'package:flutter/material.dart';
-import 'pages/detection_page.dart';
 import 'pages/settings_page/settings_page.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'widgets/status_app_bar.dart';
@@ -19,18 +17,10 @@ class _DroneDetectorAppState extends State<DroneDetectorApp> {
   int _currentIndex = 0;
 
   final List<NavPage> _pages = [
-    DetectionPage(),
-    CalibrationPage(),
     LiveStatusPage(),
+    CalibrationPage(),
     SettingsPage(),
   ];
-
-  // final List<NavPage> _pages = [
-  //   DetectionPage(),
-  //   CalibrationPage(),
-  //   ApiAlertPage(),
-  //   SettingsPage(),
-  // ];
 
   @override
   Widget build(BuildContext context) {

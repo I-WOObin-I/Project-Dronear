@@ -7,12 +7,8 @@ class SpectrogramWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.symmetric(
-        vertical: 10.0,
-        horizontal: AppTheme.cardSideMargin,
-      ),
       padding: AppTheme.cardPadding,
-      height: 110,
+      height: double.infinity,
       decoration: BoxDecoration(
         border: Border.all(color: AppTheme.boxBorderColor),
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
