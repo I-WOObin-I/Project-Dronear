@@ -1,33 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../nav/page_nav_info.dart';
+import '../../nav/page_nav_info.dart';
+// Import your alert setup pages
+import './alert_setup_pages/alert_call_page.dart';
+import './alert_setup_pages/alert_sms_page.dart';
+import './alert_setup_pages/alert_email_page.dart';
+import './alert_setup_pages/alert_http_api_page.dart';
 
-class CalibrationPage extends StatefulWidget implements NavPage {
+class SettingsPage extends StatefulWidget implements NavPage {
   @override
   Widget get page => this;
   @override
-  String get pageLabel => 'Calibration';
+  String get pageLabel => 'Settings';
   @override
-  IconData get pageIcon => Icons.build;
+  IconData get pageIcon => Icons.settings;
 
-  const CalibrationPage({super.key});
+  const SettingsPage({super.key});
 
   @override
-  State<CalibrationPage> createState() => _CalibrationPageState();
+  State<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _CalibrationPageState extends State<CalibrationPage> {
+class _SettingsPageState extends State<SettingsPage> {
+  // Calibration settings
   double droneConfidenceThreshold = 0.7;
   double noDroneConfidenceThreshold = 0.2;
   double alertThreshold = 0.8;
-  double recognitionFrequency = 10.0;
+  double recognitionFrequency = 10.0; // times per second, default 10
   String recognitionModel = 'Model A';
   final List<String> recognitionModels = ['Model A', 'Model B', 'Model C'];
 
+  // Text controllers for numeric input fields
   late TextEditingController droneConfidenceController;
   late TextEditingController noDroneConfidenceController;
   late TextEditingController alertThresholdController;
   late TextEditingController recognitionFrequencyController;
+
+  // App settings
+  bool workInBackground = true;
+
+  // Alert setup pages
+  final List<NavPage> alertPages = [
+    AlertCallPage(),
+    AlertSmsPage(),
+    AlertEmailPage(),
+    AlertHttpApiPage(),
+  ];
 
   @override
   void initState() {
@@ -61,108 +79,98 @@ class _CalibrationPageState extends State<CalibrationPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Calibration',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          // App Settings Section Container
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'App Settings',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  title: const Text('Work in background'),
+                  value: workInBackground,
+                  onChanged: (val) => setState(() => workInBackground = val),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          _buildSliderWithInput(
-            label: 'Drone confidence threshold',
-            value: droneConfidenceThreshold,
-            min: 0.0,
-            max: 1.0,
-            controller: droneConfidenceController,
-            decimals: 2,
-            onChanged: (val) {
-              setState(() {
-                droneConfidenceThreshold = val;
-                droneConfidenceController.text = val.toStringAsFixed(2);
-              });
-            },
-            onInputChanged: (val) {
-              final parsed = double.tryParse(val);
-              if (parsed != null && parsed >= 0.0 && parsed <= 1.0) {
-                setState(() {
-                  droneConfidenceThreshold = parsed;
-                });
-              }
-            },
-          ),
-          _buildSliderWithInput(
-            label: 'No drone confidence threshold',
-            value: noDroneConfidenceThreshold,
-            min: 0.0,
-            max: 1.0,
-            controller: noDroneConfidenceController,
-            decimals: 2,
-            onChanged: (val) {
-              setState(() {
-                noDroneConfidenceThreshold = val;
-                noDroneConfidenceController.text = val.toStringAsFixed(2);
-              });
-            },
-            onInputChanged: (val) {
-              final parsed = double.tryParse(val);
-              if (parsed != null && parsed >= 0.0 && parsed <= 1.0) {
-                setState(() {
-                  noDroneConfidenceThreshold = parsed;
-                });
-              }
-            },
-          ),
-          _buildSliderWithInput(
-            label: 'Alert threshold',
-            value: alertThreshold,
-            min: 0.0,
-            max: 1.0,
-            controller: alertThresholdController,
-            decimals: 2,
-            onChanged: (val) {
-              setState(() {
-                alertThreshold = val;
-                alertThresholdController.text = val.toStringAsFixed(2);
-              });
-            },
-            onInputChanged: (val) {
-              final parsed = double.tryParse(val);
-              if (parsed != null && parsed >= 0.0 && parsed <= 1.0) {
-                setState(() {
-                  alertThreshold = parsed;
-                });
-              }
-            },
-          ),
-          _buildSliderWithInput(
-            label: 'Recognition frequency (times/sec)',
-            value: recognitionFrequency,
-            min: 1.0,
-            max: 30.0,
-            controller: recognitionFrequencyController,
-            decimals: 1,
-            onChanged: (val) {
-              setState(() {
-                recognitionFrequency = val;
-                recognitionFrequencyController.text = val.toStringAsFixed(1);
-              });
-            },
-            onInputChanged: (val) {
-              final parsed = double.tryParse(val);
-              if (parsed != null && parsed >= 1.0 && parsed <= 30.0) {
-                setState(() {
-                  recognitionFrequency = parsed;
-                });
-              }
-            },
-          ),
-          const SizedBox(height: 8),
-          _buildDropdown<String>(
-            label: 'Recognition model selection',
-            value: recognitionModel,
-            items: recognitionModels,
-            onChanged: (val) => setState(() => recognitionModel = val!),
+          const SizedBox(height: 16),
+          Divider(),
+          const SizedBox(height: 16),
+
+          // Alerts Section Container
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Alerts Setup',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Column(
+                  children: alertPages.map((page) {
+                    return _buildAlertSetupButton(
+                      context,
+                      icon: page.pageIcon,
+                      label: page.pageLabel,
+                      page: page.page,
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAlertSetupButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Widget page,
+  }) {
+    return ListTile(
+      leading: Icon(icon, size: 28),
+      title: Text(label, style: const TextStyle(fontSize: 16)),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+      },
+      shape: const Border(
+        bottom: BorderSide(color: Color(0xFFE0E0E0)), // subtle divider
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
     );
   }
 
