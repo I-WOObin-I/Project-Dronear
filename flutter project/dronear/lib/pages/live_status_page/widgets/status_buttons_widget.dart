@@ -1,30 +1,22 @@
 import 'package:flutter/material.dart';
 import '../../../config/app_theme.dart';
+import 'package:provider/provider.dart';
+import '../../../state/alerts_state.dart';
 
 class StatusButtonsWidget extends StatelessWidget {
-  final Map<String, bool> featureStatus; // true = armed, false = offline
-  final Map<String, Widget> alertPages;
+  final List<Widget> alertPages;
 
-  const StatusButtonsWidget({
-    super.key,
-    required this.featureStatus,
-    required this.alertPages,
-  });
+  const StatusButtonsWidget({super.key, required this.alertPages});
 
   @override
   Widget build(BuildContext context) {
-    final statusList = [
-      {'key': 'CALL', 'icon': Icons.phone},
-      {'key': 'SMS', 'icon': Icons.sms},
-      {'key': 'MAIL', 'icon': Icons.mail},
-      {'key': 'HTTP API', 'icon': Icons.settings_ethernet},
-    ];
+    final alertsState = context.watch<AlertsState>();
 
     final double screenWidth = MediaQuery.of(context).size.width;
-    final double totalHorizontalPadding = 8 * 2 + 6 * (statusList.length - 1);
+    final double totalHorizontalPadding = 8 * 2 + 6 * 3;
     final double availableWidth =
         screenWidth - (AppTheme.cardSideMargin * 2) - totalHorizontalPadding;
-    final double buttonWidth = availableWidth / statusList.length;
+    final double buttonWidth = availableWidth / 4;
 
     return Container(
       margin: EdgeInsets.symmetric(
@@ -33,60 +25,90 @@ class StatusButtonsWidget extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: statusList.map((status) {
-          final key = status['key'] as String;
-          final bool isArmed = featureStatus[key] ?? false;
-          final Color color = isArmed ? Colors.orange : Colors.grey;
-          final String statusText = isArmed ? 'ARMED' : 'off';
-
-          return SizedBox(
+        children: [
+          buildStatusButton(
+            label: 'CALL',
+            icon: Icons.phone,
+            isArmed: alertsState.isCallEnabled,
             width: buttonWidth,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    AppTheme.cardBorderRadius,
+            onPressed: () => _navigateToPage(context, 0),
+          ),
+          buildStatusButton(
+            label: 'SMS',
+            icon: Icons.sms,
+            isArmed: alertsState.isSmsEnabled,
+            width: buttonWidth,
+            onPressed: () => _navigateToPage(context, 1),
+          ),
+          buildStatusButton(
+            label: 'EMAIL',
+            icon: Icons.mail,
+            isArmed: alertsState.isEmailEnabled,
+            width: buttonWidth,
+            onPressed: () => _navigateToPage(context, 2),
+          ),
+          buildStatusButton(
+            label: 'HTTP API',
+            icon: Icons.settings_ethernet,
+            isArmed: alertsState.isHttpApiEnabled,
+            width: buttonWidth,
+            onPressed: () => _navigateToPage(context, 3),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToPage(BuildContext context, int i) {
+    final Widget? targetPage = alertPages[i];
+    if (targetPage != null) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => targetPage));
+    }
+  }
+
+  Widget buildStatusButton({
+    required String label,
+    required IconData icon,
+    required bool isArmed,
+    required VoidCallback onPressed,
+    required double width,
+  }) {
+    final Color color = isArmed ? Colors.orange : Colors.grey;
+    final String statusText = isArmed ? 'ARMED' : 'off';
+
+    return SizedBox(
+      width: width,
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+          ),
+          side: BorderSide(color: color),
+          foregroundColor: color,
+          padding: AppTheme.buttonPadding,
+        ),
+        onPressed: onPressed,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 18, color: color),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: TextStyle(fontSize: 13, color: color),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                side: BorderSide(color: color),
-                foregroundColor: color,
-                padding: AppTheme.buttonPadding,
-              ),
-              onPressed: () {
-                final Widget? targetPage = alertPages[key];
-                if (targetPage != null) {
-                  Navigator.of(
-                    context,
-                  ).push(MaterialPageRoute(builder: (_) => targetPage));
-                }
-              },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(status['icon'] as IconData, size: 18, color: color),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          key,
-                          style: TextStyle(fontSize: 13, color: color),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    statusText,
-                    style: TextStyle(fontSize: 16, color: color),
-                  ),
-                ],
-              ),
+              ],
             ),
-          );
-        }).toList(),
+            const SizedBox(height: 4),
+            Text(statusText, style: TextStyle(fontSize: 16, color: color)),
+          ],
+        ),
       ),
     );
   }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../../../nav/page_nav_info.dart';
 import '../../../config/app_theme.dart';
+import '../../../state/alerts_state.dart';
+import 'package:provider/provider.dart';
 
 String savedHttpUrl = 'https://example.com/alert';
 String savedHttpMethod = 'POST';
@@ -91,6 +93,7 @@ class _AlertHttpApiPageState extends State<AlertHttpApiPage> {
 
   @override
   Widget build(BuildContext context) {
+    final alertsState = context.watch<AlertsState>();
     final generatedPayloadJson = const JsonEncoder.withIndent(
       '  ',
     ).convert(_generatedPayload);
@@ -111,8 +114,8 @@ class _AlertHttpApiPageState extends State<AlertHttpApiPage> {
             const Divider(),
             SwitchListTile(
               title: const Text('Enable HTTP API Alert'),
-              value: alertEnabled,
-              onChanged: (val) => setState(() => alertEnabled = val),
+              value: alertsState.isHttpApiEnabled,
+              onChanged: (val) => alertsState.toggleHttpApi(val),
               contentPadding: EdgeInsets.zero,
             ),
             const Divider(),

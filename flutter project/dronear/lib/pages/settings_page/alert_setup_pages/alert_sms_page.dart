@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../nav/page_nav_info.dart';
+import 'package:provider/provider.dart';
+import '../../../state/alerts_state.dart';
 
 // Example of variables that could be loaded/saved from persistent storage.
 String savedPhoneNumber = '+48123456789';
@@ -71,6 +73,8 @@ class _AlertSmsPageState extends State<AlertSmsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final alertsState = context.watch<AlertsState>();
+
     return Scaffold(
       appBar: AppBar(title: const Text('Alert SMS Setup')),
       body: SingleChildScrollView(
@@ -87,8 +91,8 @@ class _AlertSmsPageState extends State<AlertSmsPage> {
             const Divider(),
             SwitchListTile(
               title: const Text('Enable SMS Alert'),
-              value: alertEnabled,
-              onChanged: (val) => setState(() => alertEnabled = val),
+              value: alertsState.isSmsEnabled,
+              onChanged: (val) => alertsState.toggleSms(val),
               contentPadding: EdgeInsets.zero,
             ),
             const Divider(),

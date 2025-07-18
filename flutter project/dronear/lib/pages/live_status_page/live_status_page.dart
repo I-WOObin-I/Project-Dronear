@@ -29,12 +29,12 @@ class LiveStatusPage extends StatefulWidget implements NavPage {
 class _LiveStatusPageState extends State<LiveStatusPage> {
   bool detectionEnabled = false;
 
-  final Map<String, Widget> alertPageMap = {
-    'CALL': AlertCallPage(),
-    'SMS': AlertSmsPage(),
-    'MAIL': AlertEmailPage(),
-    'HTTP API': AlertHttpApiPage(),
-  };
+  final List<Widget> alertPageMap = [
+    AlertCallPage(),
+    AlertSmsPage(),
+    AlertEmailPage(),
+    AlertHttpApiPage(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -43,15 +43,7 @@ class _LiveStatusPageState extends State<LiveStatusPage> {
         top: false,
         child: Column(
           children: [
-            StatusButtonsWidget(
-              featureStatus: const {
-                'CALL': true,
-                'SMS': false,
-                'MAIL': true,
-                'HTTP API': false,
-              },
-              alertPages: alertPageMap,
-            ),
+            StatusButtonsWidget(alertPages: alertPageMap),
 
             Container(
               height: 100,

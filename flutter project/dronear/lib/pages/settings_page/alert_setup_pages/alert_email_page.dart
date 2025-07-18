@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../nav/page_nav_info.dart';
+import 'package:provider/provider.dart';
+import '../../../state/alerts_state.dart';
 
 // These would come from your persistent storage/provider in a real app.
 String savedEmailAddress = 'example@example.com';
@@ -68,6 +70,8 @@ class _AlertEmailPageState extends State<AlertEmailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final alertsState = context.watch<AlertsState>();
+
     return Scaffold(
       appBar: AppBar(title: const Text('Alert Email Setup')),
       body: SingleChildScrollView(
@@ -84,8 +88,8 @@ class _AlertEmailPageState extends State<AlertEmailPage> {
             const Divider(),
             SwitchListTile(
               title: const Text('Enable Email Alert'),
-              value: alertEnabled,
-              onChanged: (val) => setState(() => alertEnabled = val),
+              value: alertsState.isEmailEnabled,
+              onChanged: (val) => alertsState.toggleEmail(val),
               contentPadding: EdgeInsets.zero,
             ),
             const Divider(),

@@ -1,0 +1,46 @@
+lib/
+│
+├── main.dart
+│
+├── config/
+│   └── app_theme.dart
+|
+├── models/
+|
+├── nav/
+│   └── page_nav_info.dart
+│
+├── pages/
+|   ├── live_status_page/
+|   |   ├── widgets/
+|   |   |   ├── on_off_main_switch_widget.dart
+|   |   |   ├── peers_map_widget.dart
+|   |   |   ├── spectrogram_widget.dart
+|   |   |   ├── status_buttons_widget.dart
+|   |   └── live_status_page.dart
+|   |
+|   ├── settings_page/
+|   |   ├── alert_setup_pages/
+|   |   |   ├── alert_call_page.dart
+|   |   |   ├── alert_email_page.dart
+|   |   |   ├── alert_http_api_page.dart
+|   |   |   └── alert_sms_page.dart
+|   |   └── settings_page.dart
+|   ├── api_alert_page.dart
+|   ├── calibration_page.dart
+|   ├── detection_page.dart
+|   └── home_page.dart
+|
+├── services/
+|   └── persistent_storage_service.dart
+|
+├── state/
+|   └── alerts_state.dart
+|
+├── widgets/
+|   ├── bottom_nav_bar.dart
+|   └── status_app_bar.dart
+|
+├── app.dart
+└── main.dart
+

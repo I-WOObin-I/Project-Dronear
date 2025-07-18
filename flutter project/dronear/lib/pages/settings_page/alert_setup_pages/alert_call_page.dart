@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../nav/page_nav_info.dart';
+import 'package:provider/provider.dart';
+import '../../../state/alerts_state.dart';
 
 class AlertCallPage extends StatefulWidget implements NavPage {
   @override
@@ -54,7 +56,9 @@ class _AlertCallPageState extends State<AlertCallPage> {
 
   @override
   Widget build(BuildContext context) {
-    final String formattedTime = 'placeholder for formatted time';
+    final alertsState = context.watch<AlertsState>();
+
+    final String formattedTime = lastCallTime?.toLocal().toString() ?? 'Never';
 
     return Scaffold(
       appBar: AppBar(title: const Text('Alert Call Setup')),
@@ -70,6 +74,17 @@ class _AlertCallPageState extends State<AlertCallPage> {
                 style: TextStyle(fontSize: 15),
               ),
               const Divider(),
+
+              /// ✅ Toggle alert call enable state
+              SwitchListTile(
+                title: const Text('Enable Call Alert'),
+                value: alertsState.isCallEnabled,
+                onChanged: (val) => alertsState.toggleCall(val),
+                contentPadding: EdgeInsets.zero,
+              ),
+
+              const Divider(),
+
               SwitchListTile(
                 title: const Text('Work in background'),
                 value: workInBackground,
