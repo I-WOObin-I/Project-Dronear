@@ -14,7 +14,8 @@ class StatusButtonsWidget extends StatelessWidget {
 
     final double screenWidth = MediaQuery.of(context).size.width;
     final double totalHorizontalPadding = 8 * 2 + 6 * 3;
-    final double availableWidth = screenWidth - (AppTheme.cardSideMargin * 2) - totalHorizontalPadding;
+    final double availableWidth =
+        screenWidth - (AppTheme.cardSideMargin * 2) - totalHorizontalPadding;
     final double buttonWidth = availableWidth / 4;
 
     return Container(
@@ -44,7 +45,7 @@ class StatusButtonsWidget extends StatelessWidget {
             onPressed: () => _navigateToPage(context, 2),
           ),
           buildStatusButton(
-            label: 'HTTP API',
+            label: 'API',
             icon: Icons.settings_ethernet,
             isArmed: alertsState.getValue(AlertsState.httpApiAlertEnabledKey),
             width: buttonWidth,
@@ -76,7 +77,9 @@ class StatusButtonsWidget extends StatelessWidget {
       width: width,
       child: OutlinedButton(
         style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+          ),
           side: BorderSide(color: color),
           foregroundColor: color,
           padding: AppTheme.buttonPadding,

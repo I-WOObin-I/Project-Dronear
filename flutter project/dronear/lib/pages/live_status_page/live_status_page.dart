@@ -47,22 +47,12 @@ class _LiveStatusPageState extends State<LiveStatusPage> {
 
             Container(
               height: 100,
-              margin: EdgeInsets.symmetric(
-                horizontal: AppTheme.cardSideMargin,
-                vertical: 8,
-              ),
+              margin: EdgeInsets.symmetric(horizontal: AppTheme.cardSideMargin, vertical: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Expanded(child: SpectrogramWidget()),
-                  OnOffMainSwitchWidget(
-                    isOn: detectionEnabled,
-                    onConfirmedToggle: (newValue) {
-                      setState(() {
-                        detectionEnabled = newValue;
-                      });
-                    },
-                  ),
+                  OnOffMainSwitchWidget(),
                 ],
               ),
             ),

@@ -45,10 +45,7 @@ class _PeersMapWidgetState extends State<PeersMapWidget> {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        margin: EdgeInsets.symmetric(
-          vertical: 10.0,
-          horizontal: AppTheme.cardSideMargin,
-        ),
+        margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: AppTheme.cardSideMargin),
         padding: AppTheme.cardPadding,
         decoration: BoxDecoration(
           border: Border.all(color: AppTheme.boxBorderColor),
@@ -57,15 +54,10 @@ class _PeersMapWidgetState extends State<PeersMapWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Center(
-              child: Text("peers map", style: TextStyle(fontSize: 18)),
-            ),
+            const Center(child: Text("peers map", style: TextStyle(fontSize: 18))),
             const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _refresh,
-              child: const Text('Refresh prefs'),
-            ),
-            const SizedBox(height: 10),
+            ElevatedButton(onPressed: _refresh, child: const Text('Refresh prefs')),
+            const SizedBox(height: 2),
             _loading
                 ? const Center(child: CircularProgressIndicator())
                 : Expanded(

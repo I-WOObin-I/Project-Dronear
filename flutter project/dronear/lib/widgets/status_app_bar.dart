@@ -51,11 +51,7 @@ class StatusAppBar extends StatelessWidget {
       case AlertState.offline:
         return (Icons.notifications_off, Colors.grey, 'Alert Offline');
       case AlertState.standby:
-        return (
-          Icons.notifications,
-          const Color.fromARGB(255, 113, 142, 238),
-          'Alert Standby',
-        );
+        return (Icons.notifications, const Color.fromARGB(255, 113, 142, 238), 'Alert Standby');
       case AlertState.triggered:
         return (Icons.crisis_alert, Colors.redAccent, 'Alert Triggered');
     }
@@ -80,8 +76,7 @@ class StatusAppBar extends StatelessWidget {
         ? '${(droneProbability * 100).toStringAsFixed(1)}% ${getProbabilityLabel(droneProbability)}'
         : '-';
 
-    final (IconData alarmIcon, Color alarmColor, String alarmLabel) =
-        getAlertIndicator(alertState);
+    final (IconData alarmIcon, Color alarmColor, String alarmLabel) = getAlertIndicator(alertState);
 
     return AppBar(
       backgroundColor: Colors.black87,
@@ -96,10 +91,7 @@ class StatusAppBar extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             isOnline ? 'Online' : 'Offline',
-            style: TextStyle(
-              color: isOnline ? Colors.green : Colors.red,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: isOnline ? Colors.green : Colors.red, fontSize: 12),
           ),
 
           separator(),
@@ -107,17 +99,14 @@ class StatusAppBar extends StatelessWidget {
           // Drone Probability Indicator
           Icon(Icons.speed, color: probabilityColor, size: 20),
           const SizedBox(width: 6),
-          Text(
-            probabilityLabel,
-            style: TextStyle(color: probabilityColor, fontSize: 14),
-          ),
+          Text(probabilityLabel, style: TextStyle(color: probabilityColor, fontSize: 12)),
 
           separator(),
 
           // Alert Indicator
           Icon(alarmIcon, color: alarmColor, size: 20),
           const SizedBox(width: 6),
-          Text(alarmLabel, style: TextStyle(color: alarmColor, fontSize: 14)),
+          Text(alarmLabel, style: TextStyle(color: alarmColor, fontSize: 12)),
 
           const Spacer(),
 

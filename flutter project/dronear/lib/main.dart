@@ -3,16 +3,22 @@ import 'package:provider/provider.dart';
 
 import 'app.dart';
 import 'state/alerts_state.dart';
+import 'state/microphone_state.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final alertsState = AlertsState();
-  await alertsState.init(); // Load initial values
+  final microphoneState = MicrophoneState();
+  await alertsState.init();
+  await microphoneState.init();
 
   runApp(
-    ChangeNotifierProvider<AlertsState>.value(
-      value: alertsState,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AlertsState>.value(value: alertsState),
+        ChangeNotifierProvider<MicrophoneState>.value(value: microphoneState),
+      ],
       child: const DroneDetectorApp(),
     ),
   );
