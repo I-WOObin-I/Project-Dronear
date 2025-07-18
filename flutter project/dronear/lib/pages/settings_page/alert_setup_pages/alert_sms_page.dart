@@ -3,13 +3,6 @@ import '../../../nav/page_nav_info.dart';
 import 'package:provider/provider.dart';
 import '../../../state/alerts_state.dart';
 
-// Example of variables that could be loaded/saved from persistent storage.
-String savedPhoneNumber = '+48123456789';
-String savedSmsContent = 'Drone alert detected!';
-bool savedAlertEnabled = true;
-bool savedIncludeRecording = false;
-bool savedIncludeLocation = false;
-
 class AlertSmsPage extends StatefulWidget implements NavPage {
   @override
   Widget get page => this;
@@ -27,21 +20,25 @@ class AlertSmsPage extends StatefulWidget implements NavPage {
 class _AlertSmsPageState extends State<AlertSmsPage> {
   late TextEditingController _numberController;
   late TextEditingController _textController;
-
-  bool alertEnabled = true;
-  bool includeRecording = false;
-  bool includeLocation = false;
-  String lastSmsSent = 'Never';
+  DateTime? lastSmsSent;
 
   @override
   void initState() {
     super.initState();
-    // Initialize controllers and switches from saved variables
-    _numberController = TextEditingController(text: savedPhoneNumber);
-    _textController = TextEditingController(text: savedSmsContent);
-    alertEnabled = savedAlertEnabled;
-    includeRecording = savedIncludeRecording;
-    includeLocation = savedIncludeLocation;
+    final alertsState = context.read<AlertsState>();
+    _numberController = TextEditingController(
+      text: alertsState.getField(AlertsState.smsAlertNumberKey),
+    );
+    _textController = TextEditingController(
+      text: alertsState.getField(AlertsState.smsAlertContentKey),
+    );
+
+    _numberController.addListener(() {
+      context.read<AlertsState>().setField(AlertsState.smsAlertNumberKey, _numberController.text);
+    });
+    _textController.addListener(() {
+      context.read<AlertsState>().setField(AlertsState.smsAlertContentKey, _textController.text);
+    });
   }
 
   @override
@@ -51,29 +48,17 @@ class _AlertSmsPageState extends State<AlertSmsPage> {
     super.dispose();
   }
 
-  void _saveSettings() {
-    // Save the current values to your persistent storage or variables
-    savedPhoneNumber = _numberController.text;
-    savedSmsContent = _textController.text;
-    savedAlertEnabled = alertEnabled;
-    savedIncludeRecording = includeRecording;
-    savedIncludeLocation = includeLocation;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Alert SMS settings saved')));
-  }
-
   void _testSms() {
-    // Implement your test SMS functionality here
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Test SMS sent')));
-    lastSmsSent = DateTime.now().toIso8601String(); // Update last sent time
+    setState(() {
+      lastSmsSent = DateTime.now();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Test SMS sent')));
   }
 
   @override
   Widget build(BuildContext context) {
     final alertsState = context.watch<AlertsState>();
+    final String formattedTime = lastSmsSent?.toLocal().toString() ?? 'Never';
 
     return Scaffold(
       appBar: AppBar(title: const Text('Alert SMS Setup')),
@@ -89,23 +74,29 @@ class _AlertSmsPageState extends State<AlertSmsPage> {
               style: TextStyle(fontSize: 15),
             ),
             const Divider(),
+
+            /// Enable SMS Alert switch using alertsState
             SwitchListTile(
               title: const Text('Enable SMS Alert'),
-              value: alertsState.isSmsEnabled,
-              onChanged: (val) => alertsState.toggleSms(val),
+              value: alertsState.getValue(AlertsState.smsAlertEnabledKey),
+              onChanged: (val) => alertsState.setValue(AlertsState.smsAlertEnabledKey, val),
               contentPadding: EdgeInsets.zero,
             ),
             const Divider(),
+
+            /// Include sound file toggle using alertsState
             SwitchListTile(
-              title: const Text('Include sound recording file'),
-              value: includeRecording,
-              onChanged: (val) => setState(() => includeRecording = val),
+              title: const Text('Include sound file'),
+              value: alertsState.getValue(AlertsState.smsAlertIncludeSoundKey),
+              onChanged: (val) => alertsState.setValue(AlertsState.smsAlertIncludeSoundKey, val),
               contentPadding: EdgeInsets.zero,
             ),
+
+            /// Include location toggle using alertsState
             SwitchListTile(
               title: const Text('Include location'),
-              value: includeLocation,
-              onChanged: (val) => setState(() => includeLocation = val),
+              value: alertsState.getValue(AlertsState.smsAlertIncludeLocationKey),
+              onChanged: (val) => alertsState.setValue(AlertsState.smsAlertIncludeLocationKey, val),
               contentPadding: EdgeInsets.zero,
             ),
             const Divider(),
@@ -115,10 +106,7 @@ class _AlertSmsPageState extends State<AlertSmsPage> {
               style: TextStyle(fontSize: 15),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Phone Number',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-            ),
+            const Text('Phone Number', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             TextField(
               controller: _numberController,
@@ -128,13 +116,9 @@ class _AlertSmsPageState extends State<AlertSmsPage> {
                 hintText: '+48123456789',
                 prefixIcon: Icon(Icons.phone),
               ),
-              onChanged: (val) => setState(() {}),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'SMS Content',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-            ),
+            const Text('SMS Content', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             TextField(
               controller: _textController,
@@ -143,28 +127,17 @@ class _AlertSmsPageState extends State<AlertSmsPage> {
                 border: OutlineInputBorder(),
                 hintText: 'Enter message to send in alert SMS...',
               ),
-              onChanged: (val) => setState(() {}),
             ),
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                ElevatedButton.icon(
-                  onPressed: _saveSettings,
-                  icon: const Icon(Icons.save),
-                  label: const Text('Save'),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton.icon(
-                  onPressed: _testSms,
-                  icon: const Icon(Icons.send_to_mobile),
-                  label: const Text('Test SMS'),
-                ),
-              ],
+            ElevatedButton.icon(
+              onPressed: _testSms,
+              icon: const Icon(Icons.send_to_mobile),
+              label: const Text('Test SMS'),
             ),
             Text(
-              'Last SMS sent: $lastSmsSent',
+              'Last SMS sent: $formattedTime',
               style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
             ),
             const SizedBox(height: 16),

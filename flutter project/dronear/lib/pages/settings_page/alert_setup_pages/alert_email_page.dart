@@ -3,11 +3,6 @@ import '../../../nav/page_nav_info.dart';
 import 'package:provider/provider.dart';
 import '../../../state/alerts_state.dart';
 
-// These would come from your persistent storage/provider in a real app.
-String savedEmailAddress = 'example@example.com';
-String savedSubject = 'Drone Alert ID_DAS_123';
-String savedAlertPayload = 'Drone Alert ID_DAS_123';
-
 class AlertEmailPage extends StatefulWidget implements NavPage {
   @override
   Widget get page => this;
@@ -26,20 +21,32 @@ class _AlertEmailPageState extends State<AlertEmailPage> {
   late TextEditingController _emailController;
   late TextEditingController _subjectController;
   late TextEditingController _alertPayloadController;
-
-  bool alertEnabled = true;
-  bool includeRecording = false;
-  bool includeLocation = false;
-  String lastEmailSent = 'N/A';
+  DateTime? lastEmailSent;
 
   @override
   void initState() {
     super.initState();
+    final alertsState = context.read<AlertsState>();
+    _emailController = TextEditingController(
+      text: alertsState.getField(AlertsState.emailAlertAddressKey),
+    );
+    _subjectController = TextEditingController(
+      text: alertsState.getField(AlertsState.emailAlertSubjectKey),
+    );
+    _alertPayloadController = TextEditingController(
+      text: alertsState.getField(AlertsState.emailAlertPayloadKey),
+    );
 
-    // Initialize controllers with SAVED values
-    _emailController = TextEditingController(text: savedEmailAddress);
-    _subjectController = TextEditingController(text: savedSubject);
-    _alertPayloadController = TextEditingController(text: savedAlertPayload);
+    _emailController.addListener(() {
+      context.read<AlertsState>().setField(AlertsState.emailAlertAddressKey, _emailController.text);
+    });
+    _subjectController.addListener(() {
+      context.read<AlertsState>().setField(
+        AlertsState.emailAlertSubjectKey,
+        _subjectController.text,
+      );
+    });
+    // The payload is read-only, set by the app logic elsewhere
   }
 
   @override
@@ -50,27 +57,17 @@ class _AlertEmailPageState extends State<AlertEmailPage> {
     super.dispose();
   }
 
-  void _saveSettings() {
-    // Save the current values to your persistent storage or variables
-    savedEmailAddress = _emailController.text;
-    savedSubject = _subjectController.text;
-    savedAlertPayload = _alertPayloadController.text;
-    // Optionally show a snackbar or otherwise notify the user
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Alert email settings saved')));
-  }
-
   void _testEmail() {
-    // Implement your test email functionality here
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Test email sent')));
+    setState(() {
+      lastEmailSent = DateTime.now();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Test email sent')));
   }
 
   @override
   Widget build(BuildContext context) {
     final alertsState = context.watch<AlertsState>();
+    final String formattedTime = lastEmailSent?.toLocal().toString() ?? 'N/A';
 
     return Scaffold(
       appBar: AppBar(title: const Text('Alert Email Setup')),
@@ -86,23 +83,30 @@ class _AlertEmailPageState extends State<AlertEmailPage> {
               style: TextStyle(fontSize: 15),
             ),
             const Divider(),
+
+            /// Enable Email Alert switch using alertsState
             SwitchListTile(
               title: const Text('Enable Email Alert'),
-              value: alertsState.isEmailEnabled,
-              onChanged: (val) => alertsState.toggleEmail(val),
+              value: alertsState.getValue(AlertsState.emailAlertEnabledKey),
+              onChanged: (val) => alertsState.setValue(AlertsState.emailAlertEnabledKey, val),
               contentPadding: EdgeInsets.zero,
             ),
             const Divider(),
+
+            /// Include sound file toggle using alertsState
             SwitchListTile(
-              title: const Text('Include sound recording file'),
-              value: includeRecording,
-              onChanged: (val) => setState(() => includeRecording = val),
+              title: const Text('Include sound file'),
+              value: alertsState.getValue(AlertsState.emailAlertIncludeSoundKey),
+              onChanged: (val) => alertsState.setValue(AlertsState.emailAlertIncludeSoundKey, val),
               contentPadding: EdgeInsets.zero,
             ),
+
+            /// Include location toggle using alertsState
             SwitchListTile(
               title: const Text('Include location'),
-              value: includeLocation,
-              onChanged: (val) => setState(() => includeLocation = val),
+              value: alertsState.getValue(AlertsState.emailAlertIncludeLocationKey),
+              onChanged: (val) =>
+                  alertsState.setValue(AlertsState.emailAlertIncludeLocationKey, val),
               contentPadding: EdgeInsets.zero,
             ),
             const Divider(),
@@ -122,10 +126,6 @@ class _AlertEmailPageState extends State<AlertEmailPage> {
                 border: OutlineInputBorder(),
                 hintText: 'user@example.com',
               ),
-              onChanged: (val) {
-                // Optionally update preview or state
-                setState(() {});
-              },
             ),
             const SizedBox(height: 16),
             const Text(
@@ -139,31 +139,17 @@ class _AlertEmailPageState extends State<AlertEmailPage> {
                 border: OutlineInputBorder(),
                 hintText: 'Enter email subject...',
               ),
-              onChanged: (val) {
-                // Optionally update preview or state
-                setState(() {});
-              },
             ),
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                ElevatedButton.icon(
-                  onPressed: _saveSettings,
-                  icon: const Icon(Icons.save),
-                  label: const Text('Save'),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton.icon(
-                  onPressed: _testEmail,
-                  icon: const Icon(Icons.email),
-                  label: const Text('Test Email'),
-                ),
-              ],
+            ElevatedButton.icon(
+              onPressed: _testEmail,
+              icon: const Icon(Icons.email),
+              label: const Text('Test Email'),
             ),
             Text(
-              'Last email sent: $lastEmailSent',
+              'Last email sent: $formattedTime',
               style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
             ),
             const SizedBox(height: 16),

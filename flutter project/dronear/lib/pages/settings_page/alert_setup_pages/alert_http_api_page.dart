@@ -5,13 +5,6 @@ import '../../../config/app_theme.dart';
 import '../../../state/alerts_state.dart';
 import 'package:provider/provider.dart';
 
-String savedHttpUrl = 'https://example.com/alert';
-String savedHttpMethod = 'POST';
-String savedHttpHeaders = '{"Content-Type": "application/json"}';
-String savedMessageContent = 'Drone Alert ID_DAS_123';
-bool savedIncludeRecording = false;
-bool savedIncludeLocation = false;
-
 class AlertHttpApiPage extends StatefulWidget implements NavPage {
   const AlertHttpApiPage({super.key});
 
@@ -35,20 +28,40 @@ class _AlertHttpApiPageState extends State<AlertHttpApiPage> {
 
   final List<String> _httpMethods = ['POST', 'GET', 'PUT', 'DELETE', 'PATCH'];
   late String _selectedMethod;
-
-  bool alertEnabled = true;
-  bool includeRecording = savedIncludeRecording;
-  bool includeLocation = savedIncludeLocation;
-
-  String lastSentTime = 'N/A';
+  String? lastSentTime;
 
   @override
   void initState() {
     super.initState();
-    _urlController = TextEditingController(text: savedHttpUrl);
-    _headersController = TextEditingController(text: savedHttpHeaders);
-    _messageController = TextEditingController(text: savedMessageContent);
-    _selectedMethod = savedHttpMethod;
+    final alertsState = context.read<AlertsState>();
+
+    _urlController = TextEditingController(
+      text: alertsState.getField(AlertsState.httpApiAlertUrlKey),
+    );
+    _headersController = TextEditingController(
+      text: alertsState.getField(AlertsState.httpApiAlertHeadersKey),
+    );
+    _messageController = TextEditingController(
+      text: alertsState.getField(AlertsState.httpApiAlertMessageKey),
+    );
+
+    _selectedMethod = alertsState.getField(AlertsState.httpApiAlertMethodKey);
+
+    _urlController.addListener(() {
+      context.read<AlertsState>().setField(AlertsState.httpApiAlertUrlKey, _urlController.text);
+    });
+    _headersController.addListener(() {
+      context.read<AlertsState>().setField(
+        AlertsState.httpApiAlertHeadersKey,
+        _headersController.text,
+      );
+    });
+    _messageController.addListener(() {
+      context.read<AlertsState>().setField(
+        AlertsState.httpApiAlertMessageKey,
+        _messageController.text,
+      );
+    });
   }
 
   @override
@@ -59,44 +72,32 @@ class _AlertHttpApiPageState extends State<AlertHttpApiPage> {
     super.dispose();
   }
 
-  Map<String, dynamic> get _generatedPayload => {
-    "message": _messageController.text,
-    "location": includeLocation ? "LAT: 00.0000, LNG: 00.0000" : "N/A",
-    "recordingAttached": includeRecording,
-  };
-
-  void _saveSettings() {
-    savedHttpUrl = _urlController.text;
-    savedHttpMethod = _selectedMethod;
-    savedHttpHeaders = _headersController.text;
-    savedMessageContent = _messageController.text;
-    savedIncludeRecording = includeRecording;
-    savedIncludeLocation = includeLocation;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('HTTP API alert settings saved')),
-    );
+  Map<String, dynamic> get _generatedPayload {
+    final alertsState = context.read<AlertsState>();
+    return {
+      "message": _messageController.text,
+      "location": alertsState.getValue(AlertsState.httpApiAlertIncludeLocationKey)
+          ? "LAT: 00.0000, LNG: 00.0000"
+          : "N/A",
+      "recordingAttached": alertsState.getValue(AlertsState.httpApiAlertIncludeSoundKey),
+    };
   }
 
   void _testHttpAlert() {
     setState(() {
-      lastSentTime = DateTime.now().toIso8601String();
+      lastSentTime = DateTime.now().toLocal().toString();
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Test HTTP alert sent'),
-        duration: AppTheme.testAlertDuration,
-      ),
+      const SnackBar(content: Text('Test HTTP alert sent'), duration: AppTheme.testAlertDuration),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final alertsState = context.watch<AlertsState>();
-    final generatedPayloadJson = const JsonEncoder.withIndent(
-      '  ',
-    ).convert(_generatedPayload);
+    final generatedPayloadJson = const JsonEncoder.withIndent('  ').convert(_generatedPayload);
+    final String formattedTime = lastSentTime ?? 'N/A';
 
     return Scaffold(
       appBar: AppBar(title: const Text('HTTP API Alert Setup')),
@@ -114,29 +115,28 @@ class _AlertHttpApiPageState extends State<AlertHttpApiPage> {
             const Divider(),
             SwitchListTile(
               title: const Text('Enable HTTP API Alert'),
-              value: alertsState.isHttpApiEnabled,
-              onChanged: (val) => alertsState.toggleHttpApi(val),
+              value: alertsState.getValue(AlertsState.httpApiAlertEnabledKey),
+              onChanged: (val) => alertsState.setValue(AlertsState.httpApiAlertEnabledKey, val),
               contentPadding: EdgeInsets.zero,
             ),
             const Divider(),
             SwitchListTile(
               title: const Text('Include sound recording file'),
-              value: includeRecording,
-              onChanged: (val) => setState(() => includeRecording = val),
+              value: alertsState.getValue(AlertsState.httpApiAlertIncludeSoundKey),
+              onChanged: (val) =>
+                  alertsState.setValue(AlertsState.httpApiAlertIncludeSoundKey, val),
               contentPadding: EdgeInsets.zero,
             ),
             SwitchListTile(
               title: const Text('Include location'),
-              value: includeLocation,
-              onChanged: (val) => setState(() => includeLocation = val),
+              value: alertsState.getValue(AlertsState.httpApiAlertIncludeLocationKey),
+              onChanged: (val) =>
+                  alertsState.setValue(AlertsState.httpApiAlertIncludeLocationKey, val),
               contentPadding: EdgeInsets.zero,
             ),
             const Divider(),
             const SizedBox(height: 16),
-            const Text(
-              'API Endpoint URL',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            const Text('API Endpoint URL', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             TextField(
               controller: _urlController,
@@ -146,29 +146,23 @@ class _AlertHttpApiPageState extends State<AlertHttpApiPage> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'HTTP Method',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            const Text('HTTP Method', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: _selectedMethod,
               items: _httpMethods
-                  .map(
-                    (method) =>
-                        DropdownMenuItem(value: method, child: Text(method)),
-                  )
+                  .map((method) => DropdownMenuItem(value: method, child: Text(method)))
                   .toList(),
               onChanged: (value) {
-                if (value != null) setState(() => _selectedMethod = value);
+                if (value != null) {
+                  setState(() => _selectedMethod = value);
+                  context.read<AlertsState>().setField(AlertsState.httpApiAlertMethodKey, value);
+                }
               },
               decoration: const InputDecoration(border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'HTTP Headers (JSON)',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            const Text('HTTP Headers (JSON)', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             TextField(
               controller: _headersController,
@@ -178,10 +172,7 @@ class _AlertHttpApiPageState extends State<AlertHttpApiPage> {
                 hintText: '{"Content-Type": "application/json"}',
               ),
             ),
-            const Text(
-              'Message Content',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            const Text('Message Content', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             TextField(
               controller: _messageController,
@@ -189,13 +180,9 @@ class _AlertHttpApiPageState extends State<AlertHttpApiPage> {
                 border: OutlineInputBorder(),
                 hintText: 'Enter alert message...',
               ),
-              onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Generated Payload',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            const Text('Generated Payload', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Container(
               width: double.infinity,
@@ -204,30 +191,17 @@ class _AlertHttpApiPageState extends State<AlertHttpApiPage> {
                 border: Border.all(color: Colors.grey),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: Text(
-                generatedPayloadJson,
-                style: const TextStyle(fontFamily: 'monospace'),
-              ),
+              child: Text(generatedPayloadJson, style: const TextStyle(fontFamily: 'monospace')),
             ),
             const SizedBox(height: 24),
-            Row(
-              children: [
-                ElevatedButton.icon(
-                  onPressed: _saveSettings,
-                  icon: const Icon(Icons.save),
-                  label: const Text('Save'),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton.icon(
-                  onPressed: _testHttpAlert,
-                  icon: const Icon(Icons.send),
-                  label: const Text('Test HTTP Alert'),
-                ),
-              ],
+            ElevatedButton.icon(
+              onPressed: _testHttpAlert,
+              icon: const Icon(Icons.send),
+              label: const Text('Test HTTP Alert'),
             ),
             const SizedBox(height: 16),
             Text(
-              'Last alert sent: $lastSentTime',
+              'Last alert sent: $formattedTime',
               style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
             ),
           ],

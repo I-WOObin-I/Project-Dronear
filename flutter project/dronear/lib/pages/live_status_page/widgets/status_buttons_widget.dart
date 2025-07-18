@@ -14,43 +14,39 @@ class StatusButtonsWidget extends StatelessWidget {
 
     final double screenWidth = MediaQuery.of(context).size.width;
     final double totalHorizontalPadding = 8 * 2 + 6 * 3;
-    final double availableWidth =
-        screenWidth - (AppTheme.cardSideMargin * 2) - totalHorizontalPadding;
+    final double availableWidth = screenWidth - (AppTheme.cardSideMargin * 2) - totalHorizontalPadding;
     final double buttonWidth = availableWidth / 4;
 
     return Container(
-      margin: EdgeInsets.symmetric(
-        horizontal: AppTheme.cardSideMargin,
-        vertical: 8,
-      ),
+      margin: EdgeInsets.symmetric(horizontal: AppTheme.cardSideMargin, vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           buildStatusButton(
             label: 'CALL',
             icon: Icons.phone,
-            isArmed: alertsState.isCallEnabled,
+            isArmed: alertsState.getValue(AlertsState.callAlertEnabledKey),
             width: buttonWidth,
             onPressed: () => _navigateToPage(context, 0),
           ),
           buildStatusButton(
             label: 'SMS',
             icon: Icons.sms,
-            isArmed: alertsState.isSmsEnabled,
+            isArmed: alertsState.getValue(AlertsState.smsAlertEnabledKey),
             width: buttonWidth,
             onPressed: () => _navigateToPage(context, 1),
           ),
           buildStatusButton(
             label: 'EMAIL',
             icon: Icons.mail,
-            isArmed: alertsState.isEmailEnabled,
+            isArmed: alertsState.getValue(AlertsState.emailAlertEnabledKey),
             width: buttonWidth,
             onPressed: () => _navigateToPage(context, 2),
           ),
           buildStatusButton(
             label: 'HTTP API',
             icon: Icons.settings_ethernet,
-            isArmed: alertsState.isHttpApiEnabled,
+            isArmed: alertsState.getValue(AlertsState.httpApiAlertEnabledKey),
             width: buttonWidth,
             onPressed: () => _navigateToPage(context, 3),
           ),
@@ -80,9 +76,7 @@ class StatusButtonsWidget extends StatelessWidget {
       width: width,
       child: OutlinedButton(
         style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius)),
           side: BorderSide(color: color),
           foregroundColor: color,
           padding: AppTheme.buttonPadding,
