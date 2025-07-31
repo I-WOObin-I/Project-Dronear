@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'app.dart';
 import 'state/alerts_state.dart';
 import 'state/microphone_state.dart';
+import 'state/recogniser_state.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +19,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider<AlertsState>.value(value: alertsState),
         ChangeNotifierProvider<MicrophoneState>.value(value: microphoneState),
+        ChangeNotifierProvider<RecogniserState>.value(value: RecogniserState(microphoneState)),
       ],
       child: const DroneDetectorApp(),
     ),

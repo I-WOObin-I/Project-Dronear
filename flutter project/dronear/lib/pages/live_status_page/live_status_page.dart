@@ -3,7 +3,9 @@ import '../../nav/page_nav_info.dart';
 import './widgets/status_buttons_widget.dart';
 import './widgets/spectrogram_widget.dart';
 import './widgets/peers_map_widget.dart';
+import './widgets/frequency_widget.dart';
 import './widgets/on_off_main_switch_widget.dart'; // Make sure this is created
+import './widgets/example_flchart_widget.dart';
 import '../../config/app_theme.dart';
 import '../settings_page/alert_setup_pages/alert_call_page.dart';
 import '../settings_page/alert_setup_pages/alert_sms_page.dart';
@@ -57,7 +59,8 @@ class _LiveStatusPageState extends State<LiveStatusPage> {
               ),
             ),
 
-            const Expanded(child: PeersMapWidget()),
+            // const Expanded(child: PeersMapWidget()),
+            const Expanded(child: FrequencySpectrumWidget()),
           ],
         ),
       ),
