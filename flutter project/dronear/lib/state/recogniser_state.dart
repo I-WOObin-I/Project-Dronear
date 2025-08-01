@@ -33,16 +33,16 @@ class RecogniserState extends ChangeNotifier {
       return;
     }
 
-    // Add newly captured spectrogram frames to our buffer.
-    if (_microphoneState.spectrogram.length > _spectrogramBuffer.length) {
-      final newFrames = _microphoneState.spectrogram.sublist(_spectrogramBuffer.length);
-      _spectrogramBuffer.addAll(newFrames);
-    }
+    // // Add newly captured spectrogram frames to our buffer.
+    // if (_microphoneState.spectrogram.length > _spectrogramBuffer.length) {
+    //   final newFrames = _microphoneState.spectrogram.sublist(_spectrogramBuffer.length);
+    //   _spectrogramBuffer.addAll(newFrames);
+    // }
 
-    // Once the buffer has enough frames, run the model.
-    if (_spectrogramBuffer.length >= _requiredInputWidth) {
-      // _runInference();
-    }
+    // // Once the buffer has enough frames, run the model.
+    // if (_spectrogramBuffer.length >= _requiredInputWidth) {
+    //   // _runInference();
+    // }
   }
 
   /// Prepares the buffered data and passes it to the TFLite service.
