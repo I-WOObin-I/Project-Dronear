@@ -1,11 +1,13 @@
+import 'package:dronear/pages/live_status_page/widgets/prediction_widget.dart';
+import 'package:dronear/state/spectrogram_bitmap_state.dart';
 import 'package:flutter/material.dart';
 import '../../nav/page_nav_info.dart';
 import './widgets/status_buttons_widget.dart';
 import './widgets/spectrogram_widget.dart';
 import './widgets/peers_map_widget.dart';
 import './widgets/frequency_widget.dart';
-import './widgets/on_off_main_switch_widget.dart'; // Make sure this is created
-import './widgets/example_flchart_widget.dart';
+import './widgets/on_off_main_switch_widget.dart';
+import './widgets/spectrogram_histogram_widget.dart';
 import './widgets/volume_widget.dart';
 import '../../config/app_theme.dart';
 import '../settings_page/alert_setup_pages/alert_call_page.dart';
@@ -54,14 +56,16 @@ class _LiveStatusPageState extends State<LiveStatusPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(child: VolumeWidget()),
+                  const Expanded(child: PredictionWidget()),
                   OnOffMainSwitchWidget(),
                 ],
               ),
             ),
 
             // const Expanded(child: PeersMapWidget()),
-            const Expanded(child: FrequencySpectrumWidget()),
+            // const Expanded(child: FrequencySpectrumWidget()),
+            // const Expanded(child: SpectrogramHistogramWidget()),
+            const Expanded(child: VolumeWidget()),
             const SizedBox(height: 8),
             const Expanded(child: SpectrogramWidget()),
           ],

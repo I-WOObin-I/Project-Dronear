@@ -1,45 +1,64 @@
 import 'dart:math';
-import 'package:flutter/foundation.dart';
+import 'dart:isolate';
+import 'dart:typed_data';
 import 'package:tflite_flutter/tflite_flutter.dart';
+import 'package:flutter/services.dart';
 import '../utils/logger.dart';
 
 class TfliteService {
-  late Interpreter _interpreter;
+  Interpreter? _interpreter;
+  Uint8List? _modelBytes;
 
+  /// Load the model into memory and create the interpreter in the main isolate.
   Future<void> loadModel() async {
     try {
-      // Create an interpreter from the asset
-      // _interpreter = await Interpreter.fromAsset('assets/model_v7.tflite');
+      _modelBytes = (await rootBundle.load('assets/model_v7.tflite')).buffer.asUint8List();
+      _interpreter = Interpreter.fromBuffer(_modelBytes!);
       print('TFLite model loaded successfully.');
     } catch (e) {
       print('Error loading TFLite model: $e');
     }
   }
 
+  /// Run inference in a background isolate using Isolate API (not compute).
   Future<Map<String, double>?> runInference(List<List<double>> inputData) async {
-    // change [H, W] to [1, 1, H, W] which stands for: batch size, channels, height, width and N and C are 1
-    var reshapedInput = inputData.reshape([1, 1, inputData.length, inputData[0].length]);
-    logger.i('Reshaped input shape: ${reshapedInput.shape}');
-    logger.i('Input data: $reshapedInput');
-
-    if (!kIsWeb && _interpreter.isAllocated == false) {
-      logger.e('Interpreter not allocated.');
+    if (_modelBytes == null) {
+      logger.e('Model not loaded.');
       return null;
     }
 
-    // The output will have shape [1, 2] for your binary classification.
+    // Set up isolate communication
+    final responsePort = ReceivePort();
+    await Isolate.spawn<_IsolateArgs>(
+      _inferenceIsolateEntry,
+      _IsolateArgs(inputData: inputData, modelBytes: _modelBytes!, sendPort: responsePort.sendPort),
+    );
+
+    // Wait for response from the isolate
+    return await responsePort.first as Map<String, double>?;
+  }
+
+  /// The entry point for the spawned isolate.
+  static void _inferenceIsolateEntry(_IsolateArgs args) async {
+    final result = await _runInferenceWorker(args.inputData, args.modelBytes);
+    args.sendPort.send(result);
+  }
+
+  /// Actual inference logic, used in isolate.
+  static Future<Map<String, double>?> _runInferenceWorker(
+    List<List<double>> inputData,
+    Uint8List modelBytes,
+  ) async {
+    final interpreter = Interpreter.fromBuffer(modelBytes);
+
+    // Reshape [H, W] -> [1, 1, H, W]
+    var reshapedInput = _reshapeInput(inputData);
     var output = List.filled(1 * 2, 0.0).reshape([1, 2]);
+    interpreter.run(reshapedInput, output);
 
-    // Run inference
-    _interpreter.run(reshapedInput, output);
-
-    // Process the output
     var outputList = output[0] as List<double>;
-
-    // Apply softmax to get probabilities
     final probabilities = _softmax(outputList);
 
-    // Find the predicted class and its confidence
     int predictedClass = 0;
     double confidence = 0.0;
     for (int i = 0; i < probabilities.length; i++) {
@@ -49,20 +68,50 @@ class TfliteService {
       }
     }
 
-    return {
-      'predictedClass': predictedClass.toDouble(),
-      'confidence': confidence * 100.0, // Return as a percentage
-    };
+    interpreter.close();
+
+    return {'predictedClass': predictedClass.toDouble(), 'confidence': confidence * 100.0};
   }
 
-  // Simple softmax implementation - NOW CORRECT
-  List<double> _softmax(List<double> input) {
+  /// Utility to reshape input for TFLite model: [H, W] -> [1, 1, H, W]
+  static List<List<List<List<double>>>> _reshapeInput(List<List<double>> input) {
+    return [
+      [input],
+    ];
+  }
+
+  /// Softmax implementation for output probabilities
+  static List<double> _softmax(List<double> input) {
     final exps = input.map((e) => exp(e)).toList();
     final sumExps = exps.reduce((a, b) => a + b);
     return exps.map((e) => e / sumExps).toList();
   }
 
   void dispose() {
-    _interpreter.close();
+    _interpreter?.close();
+  }
+}
+
+/// Helper class for passing multiple arguments to the isolate
+class _IsolateArgs {
+  final List<List<double>> inputData;
+  final Uint8List modelBytes;
+  final SendPort sendPort;
+
+  _IsolateArgs({required this.inputData, required this.modelBytes, required this.sendPort});
+}
+
+// Extension for reshaping output buffer
+extension ReshapeList2D on List<double> {
+  List<List<double>> reshape(List<int> shape) {
+    final rows = shape[0];
+    final cols = shape[1];
+    List<List<double>> result = List.generate(rows, (_) => List.filled(cols, 0.0));
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        result[r][c] = this[r * cols + c];
+      }
+    }
+    return result;
   }
 }

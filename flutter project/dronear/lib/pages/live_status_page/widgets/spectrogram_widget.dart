@@ -2,13 +2,14 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../state/microphone_state.dart';
+import 'package:dronear/state/spectrogram_bitmap_state.dart';
+import '../../../utils/logger.dart';
 
 class SpectrogramWidget extends StatefulWidget {
-  final double height;
   final double width;
+  final double height;
 
-  const SpectrogramWidget({super.key, this.height = 200, this.width = 400});
+  const SpectrogramWidget({super.key, this.width = 400, this.height = 200});
 
   @override
   State<SpectrogramWidget> createState() => _SpectrogramWidgetState();
@@ -16,37 +17,21 @@ class SpectrogramWidget extends StatefulWidget {
 
 class _SpectrogramWidgetState extends State<SpectrogramWidget> {
   ui.Image? _spectrogramImage;
-  int _lastWriteX = -1;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Listen to MicrophoneState and generate image if needed
-    final micState = Provider.of<MicrophoneState>(context);
-    _tryUpdateBitmap(micState);
+  void dispose() {
+    _spectrogramImage?.dispose();
+    super.dispose();
   }
 
-  @override
-  void didUpdateWidget(covariant SpectrogramWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final micState = Provider.of<MicrophoneState>(context, listen: false);
-    _tryUpdateBitmap(micState);
-  }
+  Future<void> _generateBitmap(SpectrogramBitmapState specBitmapState) async {
+    logger.d('Generating spectrogram bitmap at writeX: ${specBitmapState.bitmapWriteX}');
+    final Uint8List buffer = specBitmapState.bitmap;
+    final int width = specBitmapState.width;
+    final int height = specBitmapState.height;
+    final int writeX = specBitmapState.bitmapWriteX;
 
-  // Try to update the bitmap if the buffer changed
-  void _tryUpdateBitmap(MicrophoneState micState) {
-    final int writeX = micState.getSpectrogramBitmapWriteX();
-    if (_lastWriteX != writeX) {
-      _lastWriteX = writeX;
-      _generateBitmap(micState);
-    }
-  }
-
-  Future<void> _generateBitmap(MicrophoneState micState) async {
-    final Uint8List buffer = micState.getSpectrogramBitmap();
-    final int width = micState.getSpectrogramBitmapWidth();
-    final int height = micState.getSpectrogramBitmapHeight();
-    final int writeX = micState.getSpectrogramBitmapWriteX();
+    if (width == 0 || height == 0 || buffer.isEmpty) return;
 
     final Uint8List linearPixels = Uint8List(width * height * 4);
 
@@ -78,23 +63,26 @@ class _SpectrogramWidgetState extends State<SpectrogramWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<MicrophoneState>(
-      builder: (context, micState, child) {
-        // Re-generate image if buffer changed
-        _tryUpdateBitmap(micState);
+    // This will rebuild EVERY time notifyListeners is called on SpectrogramBitmapState
+    return Consumer<SpectrogramBitmapState>(
+      builder: (context, specBitmapState, child) {
+        // Always regenerate on any change for robustness
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _generateBitmap(specBitmapState);
+        });
 
         if (_spectrogramImage == null) {
           return Container(
-            height: widget.height,
             width: widget.width,
+            height: widget.height,
             alignment: Alignment.center,
             child: const Text("Waiting for audio...", style: TextStyle(color: Colors.grey)),
           );
         }
 
         return SizedBox(
-          height: widget.height,
           width: widget.width,
+          height: widget.height,
           child: RawImage(
             image: _spectrogramImage,
             fit: BoxFit.fill,
@@ -103,11 +91,5 @@ class _SpectrogramWidgetState extends State<SpectrogramWidget> {
         );
       },
     );
-  }
-
-  @override
-  void dispose() {
-    _spectrogramImage?.dispose();
-    super.dispose();
   }
 }
