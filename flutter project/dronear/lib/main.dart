@@ -13,8 +13,11 @@ void main() async {
 
   final alertsState = AlertsState();
   final spectrogramBitmapState = SpectrogramBitmapState();
-  final microphoneState = MicrophoneState(spectrogramBitmapState: spectrogramBitmapState);
-  final recogniserState = RecogniserState(microphoneState);
+  final recogniserState = RecogniserState();
+  final microphoneState = MicrophoneState(
+    spectrogramBitmapState: spectrogramBitmapState,
+    recognitionState: recogniserState,
+  );
 
   await alertsState.init();
   await microphoneState.init();

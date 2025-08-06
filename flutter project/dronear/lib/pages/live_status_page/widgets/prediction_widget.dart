@@ -7,8 +7,6 @@ class PredictionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use a Consumer to listen specifically to RecogniserState.
-    // This widget will only rebuild when RecogniserState calls notifyListeners().
     return Consumer<RecogniserState>(
       builder: (context, recogniserState, child) {
         return Container(
@@ -28,7 +26,6 @@ class PredictionWidget extends StatelessWidget {
                   color: Colors.blue,
                 ),
               ),
-              // const SizedBox(height: 10),
               // Display the confidence percentage.
               Text(
                 recogniserState.confidence,

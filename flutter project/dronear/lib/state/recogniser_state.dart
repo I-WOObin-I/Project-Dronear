@@ -5,7 +5,6 @@ import 'microphone_state.dart';
 import '../utils/logger.dart';
 
 class RecogniserState extends ChangeNotifier {
-  final MicrophoneState _microphoneState;
   final TfliteService _tfliteService = TfliteService();
 
   // The model's expected input dimensions.
@@ -14,64 +13,41 @@ class RecogniserState extends ChangeNotifier {
 
   Stopwatch _inferenceStopwatch = Stopwatch();
 
-  final List<List<double>> _spectrogramBuffer = [];
   Map<String, double>? _predictionResult;
   bool _isRecognising = false;
   bool _recognitionEnabled = true;
 
-  RecogniserState(this._microphoneState) {
+  RecogniserState() {
     _tfliteService.loadModel();
-    _microphoneState.addListener(_onMicrophoneStateChanged);
+    // No longer listening to mic state changes for auto-inference
   }
 
-  void _onMicrophoneStateChanged() {
+  /// Call this method to manually run inference on the given frames
+  /// [frames] should be a List<List<double>> of shape [timeFrames, freqBins], e.g. [32, 4096]
+  Future<void> runInferenceOnFrames(List<List<double>> frames) async {
     if (!_recognitionEnabled) return;
-    if (!_microphoneState.isRecording) {
-      if (_spectrogramBuffer.isNotEmpty || _predictionResult != null) {
-        _spectrogramBuffer.clear();
-        _predictionResult = null;
-        notifyListeners();
-      }
-      return;
-    }
-
-    // Use the accessor to get the latest frames from MicrophoneState
-    final micSpectrogram = _microphoneState.getSpectrogram();
-    if (micSpectrogram.length > _spectrogramBuffer.length) {
-      final newFrames = micSpectrogram.sublist(_spectrogramBuffer.length);
-      _spectrogramBuffer.addAll(newFrames);
-    }
-
-    // Trigger recognition when enough frames are available
-    if (_spectrogramBuffer.length >= _requiredInputWidth) {
-      _runInference();
-    }
-  }
-
-  Future<void> _runInference() async {
     if (_isRecognising) return;
+    if (frames.length < _requiredInputWidth) return;
     _isRecognising = true;
 
-    final framesToProcess = _spectrogramBuffer.sublist(
-      _spectrogramBuffer.length - _requiredInputWidth,
-    );
+    // Take the last _requiredInputWidth frames
+    final framesToProcess = frames.sublist(frames.length - _requiredInputWidth);
 
+    // Ensure each frame is resized to required height
     final resizedFrames = framesToProcess.map((frame) {
       return _resizeFrame(frame, _requiredInputHeight);
     }).toList();
 
+    // Model expects [freqBins, timeFrames]
     final inputData = _transpose(resizedFrames);
 
     _inferenceStopwatch.start();
     _predictionResult = await _tfliteService.runInference(inputData);
     _inferenceStopwatch.stop();
 
-    // logger.i("[PERF] Inference time: ${_inferenceStopwatch.elapsedMilliseconds}ms");
+    logger.i("[PERF] Inference time: ${_inferenceStopwatch.elapsedMilliseconds}ms");
 
     _inferenceStopwatch.reset();
-
-    // Sliding window: remove oldest frame
-    _spectrogramBuffer.removeAt(0);
 
     _isRecognising = false;
     notifyListeners();
@@ -116,7 +92,6 @@ class RecogniserState extends ChangeNotifier {
 
   @override
   void dispose() {
-    _microphoneState.removeListener(_onMicrophoneStateChanged);
     super.dispose();
   }
 }

@@ -8,7 +8,8 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../services/microphone_service.dart';
 import '../utils/logger.dart';
 import '../utils/spectrogram_worker.dart';
-import 'spectrogram_bitmap_state.dart'; // <-- Import your bitmap state here
+import 'spectrogram_bitmap_state.dart';
+import 'recogniser_state.dart';
 
 class MicrophoneState extends ChangeNotifier {
   final MicrophoneService _microphoneService = MicrophoneService();
@@ -29,19 +30,26 @@ class MicrophoneState extends ChangeNotifier {
   // Add reference to SpectrogramBitmapState
   late SpectrogramBitmapState spectrogramBitmapState;
 
+  // Add reference to RecognitionState (provide externally)
+  late RecogniserState
+  recognitionState; // replace dynamic with your RecognitionState type if you have it
+
   StreamSubscription<Uint8List>? _pcmSubscription;
 
   Isolate? _workerIsolate;
   SendPort? _workerSendPort;
   ReceivePort? _mainReceivePort;
 
+  // Buffer for raw PCM data
+  final List<int> _pcmBuffer = [];
+
   int get _maxFrames => targetFrameWidth;
 
-  MicrophoneState({required this.spectrogramBitmapState});
+  MicrophoneState({required this.spectrogramBitmapState, required this.recognitionState});
 
   Future<void> init() async {
     await _microphoneService.init();
-    spectrogramBitmapState.init(bitmapHeight: targetFrameHeight, bitmapWidth: targetFrameWidth * 1);
+    spectrogramBitmapState.init(bitmapHeight: targetFrameHeight, bitmapWidth: targetFrameWidth * 4);
   }
 
   Future<bool> requestPermission() async {
@@ -58,6 +66,7 @@ class MicrophoneState extends ChangeNotifier {
 
     _spectrogram.clear();
     spectrogramBitmapState.reset();
+    _pcmBuffer.clear();
 
     _mainReceivePort = ReceivePort();
     // Use new worker config and spawn
@@ -74,7 +83,8 @@ class MicrophoneState extends ChangeNotifier {
       if (_workerSendPort == null && message is SendPort) {
         _workerSendPort = message;
       } else if (message is SWSpectrogramFrameMessage) {
-        // message.frame is List<List<double>> (batch of frames)
+        // message.window is List<List<double>> (batch of frames, shape [32,4096])
+        // Keep only the last _maxFrames frames in _spectrogram
         for (final frame in message.window) {
           _spectrogram.add(List.from(frame));
           if (_spectrogram.length > _maxFrames) {
@@ -83,6 +93,10 @@ class MicrophoneState extends ChangeNotifier {
         }
         // Send batch to bitmap state
         spectrogramBitmapState.addFrames(message.window);
+
+        // Send batch to recognition state if available
+        recognitionState?.runInferenceOnFrames(message.window);
+
         notifyListeners();
       }
     });
@@ -94,9 +108,19 @@ class MicrophoneState extends ChangeNotifier {
 
       _pcmSubscription = stream.listen((data) {
         _lastVolume = _calculateVolumeDb(data);
+        notifyListeners();
 
-        if (_workerSendPort != null) {
-          _workerSendPort?.send(SWPcmDataMessage(data));
+        // Add PCM data to buffer (append as bytes)
+        _pcmBuffer.addAll(data);
+
+        // Calculate required length for 32 frames
+        final int minPcmLen =
+            ((targetFrameWidth - 1) * hopLength + nFft) * 2; // *2 for bytes per sample (16bit PCM)
+        if (_pcmBuffer.length >= minPcmLen && _workerSendPort != null) {
+          // Send only minPcmLen bytes to the worker and remove them from buffer
+          final toSend = _pcmBuffer.sublist(0, minPcmLen);
+          _workerSendPort?.send(SWPcmDataMessage(toSend));
+          _pcmBuffer.removeRange(0, minPcmLen);
         }
       });
     }
@@ -114,6 +138,7 @@ class MicrophoneState extends ChangeNotifier {
       _workerIsolate = null;
       _workerSendPort = null;
       _mainReceivePort = null;
+      _pcmBuffer.clear();
       notifyListeners();
     }
   }
