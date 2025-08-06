@@ -1,66 +1,63 @@
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import '../utils/logger.dart';
 
-/// Holds only bitmap data for UI widgets, and cyclic buffer for current spectrogram frames.
-/// - No stateful spectrogram logic except for pixel calculation and cyclic buffer.
-/// - Use [addFrames] to add a batch of frames (e.g. 32 at a time).
 class SpectrogramBitmapState extends ChangeNotifier {
   int _bitmapHeight = 0;
   int _bitmapWidth = 0;
 
   late Uint8List _spectrogramBitmap;
-  int _bitmapWriteX = 0;
-
-  // Rolling cyclic buffer of spectrogram frames (for UI/hover, not for audio logic)
-  final List<List<double>> _spectrogram = [];
+  int _bitmapCurrentCollumn = 0;
+  ui.Image? _image;
 
   SpectrogramBitmapState();
 
-  /// Dynamically initialize dimensions and buffers.
   void init({required int bitmapHeight, required int bitmapWidth}) {
     _bitmapHeight = bitmapHeight;
     _bitmapWidth = bitmapWidth;
     _spectrogramBitmap = Uint8List(_bitmapWidth * _bitmapHeight * 4);
-    _bitmapWriteX = 0;
-    _spectrogram.clear();
-    notifyListeners();
+    _bitmapCurrentCollumn = 0;
+    // Fill with opaque black pixels: ARGB = [0, 0, 0, 255]
+    for (int i = 0; i < _spectrogramBitmap.length; i += 4) {
+      _spectrogramBitmap[i + 0] = 0; // R
+      _spectrogramBitmap[i + 1] = 0; // G
+      _spectrogramBitmap[i + 2] = 0; // B
+      _spectrogramBitmap[i + 3] = 255; // A
+    }
+    _image?.dispose();
+    _image = null;
+    _updateImage();
   }
 
   int get maxFrames => _bitmapWidth;
 
-  /// Clears bitmap and spectrogram buffers.
   void reset() {
-    _bitmapWriteX = 0;
-    if (_spectrogramBitmap.isNotEmpty) {
-      _spectrogramBitmap.fillRange(0, _spectrogramBitmap.length, 0);
+    _bitmapCurrentCollumn = 0;
+    // Fill with opaque black pixels: ARGB = [0, 0, 0, 255]
+    for (int i = 0; i < _spectrogramBitmap.length; i += 4) {
+      _spectrogramBitmap[i + 0] = 0; // R
+      _spectrogramBitmap[i + 1] = 0; // G
+      _spectrogramBitmap[i + 2] = 0; // B
+      _spectrogramBitmap[i + 3] = 255; // A
     }
-    _spectrogram.clear();
-    notifyListeners();
+    _updateImage();
   }
 
-  /// Add a batch of frames (each [frame] is List<double> length bitmapHeight).
   void addFrames(List<List<double>> frames) {
-    logger.d('Adding ${frames.length} frames to bitmap state with length ${frames[0].length}');
+    // logger.d('Adding ${frames.length} frames to bitmap state with height ${frames[0].length}');
+    if (_bitmapWidth == 0 || _bitmapHeight == 0) return;
 
-    if (_bitmapWidth == 0 || _bitmapHeight == 0) return; // Not initialized
     for (final frame in frames) {
-      // Update cyclic buffer: keep at most bitmapWidth frames
-      _spectrogram.add(List.from(frame));
-      if (_spectrogram.length > _bitmapWidth) {
-        _spectrogram.removeRange(0, _spectrogram.length - _bitmapWidth);
-      }
       _putSpectrogramFrameToBitmap(frame);
     }
-    notifyListeners();
+    _updateImage();
   }
 
-  /// Converts a normalized dB value to ARGB color.
   static int _colorForDb(double db) {
-    // final norm = ((db + 80) / 80).clamp(0.0, 1.0);
     final v = (db * 255).round();
     if (v < 128) {
-      return (255 << 24) | ((v * 2) << 16); // Red shades
+      return (255 << 24) | ((v * 2) << 16);
     } else {
       int rv = 255;
       int gv = ((v - 128) * 2).clamp(0, 255).toInt();
@@ -68,25 +65,51 @@ class SpectrogramBitmapState extends ChangeNotifier {
     }
   }
 
-  /// Writes a single spectrogram frame into the bitmap at current X, then advances X cyclically.
   void _putSpectrogramFrameToBitmap(List<double> frame) {
     for (int y = 0; y < _bitmapHeight; y++) {
       int color = _colorForDb(frame[y]);
-      int pixelOffset = (y * _bitmapWidth + _bitmapWriteX) * 4;
-      _spectrogramBitmap[pixelOffset + 0] = (color >> 16) & 0xFF; // R
-      _spectrogramBitmap[pixelOffset + 1] = (color >> 8) & 0xFF; // G
-      _spectrogramBitmap[pixelOffset + 2] = color & 0xFF; // B
-      _spectrogramBitmap[pixelOffset + 3] = (color >> 24) & 0xFF; // A
+      int pixelOffset = (y * _bitmapWidth + _bitmapCurrentCollumn) * 4;
+      _spectrogramBitmap[pixelOffset + 0] = (color >> 16) & 0xFF;
+      _spectrogramBitmap[pixelOffset + 1] = (color >> 8) & 0xFF;
+      _spectrogramBitmap[pixelOffset + 2] = color & 0xFF;
+      _spectrogramBitmap[pixelOffset + 3] = (color >> 24) & 0xFF;
     }
-    _bitmapWriteX = (_bitmapWriteX + 1) % _bitmapWidth;
+    _bitmapCurrentCollumn = (_bitmapCurrentCollumn + 1) % _bitmapWidth;
   }
 
-  /// Expose current bitmap for UI.
+  Future<void> _updateImage() async {
+    if (_bitmapWidth == 0 || _bitmapHeight == 0 || _spectrogramBitmap.isEmpty) {
+      _image?.dispose();
+      _image = null;
+      notifyListeners();
+      return;
+    }
+    final Uint8List linearPixels = Uint8List(_bitmapWidth * _bitmapHeight * 4);
+    int outCol = 0;
+    for (int i = 0; i < _bitmapWidth; i++) {
+      int srcCol = (_bitmapCurrentCollumn + i) % _bitmapWidth;
+      for (int y = 0; y < _bitmapHeight; y++) {
+        int src = (y * _bitmapWidth + srcCol) * 4;
+        int dst = (y * _bitmapWidth + outCol) * 4;
+        linearPixels[dst + 0] = _spectrogramBitmap[src + 0];
+        linearPixels[dst + 1] = _spectrogramBitmap[src + 1];
+        linearPixels[dst + 2] = _spectrogramBitmap[src + 2];
+        linearPixels[dst + 3] = _spectrogramBitmap[src + 3];
+      }
+      outCol++;
+    }
+    ui.decodeImageFromPixels(linearPixels, _bitmapWidth, _bitmapHeight, ui.PixelFormat.rgba8888, (
+      ui.Image img,
+    ) {
+      _image?.dispose();
+      _image = img;
+      notifyListeners();
+    });
+  }
+
   Uint8List get bitmap => _spectrogramBitmap;
-  int get bitmapWriteX => _bitmapWriteX;
+  int get bitmapCurrentCollumn => _bitmapCurrentCollumn;
   int get width => _bitmapWidth;
   int get height => _bitmapHeight;
-
-  /// Expose the current rolling buffer of frames (for hover/highlight UI).
-  List<List<double>> get frames => _spectrogram;
+  ui.Image? get image => _image;
 }

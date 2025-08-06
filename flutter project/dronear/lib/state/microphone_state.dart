@@ -18,11 +18,11 @@ class MicrophoneState extends ChangeNotifier {
 
   // Config
   final int sampleRate = 48000;
-  final int nFft = 1024;
-  final int hopLength = 512;
-  final int spectrogramDurationSec = 5;
-  final int targetFrameHeight = 1024 ~/ 2;
-  late final int targetFrameWidth = ((sampleRate * spectrogramDurationSec - nFft) ~/ hopLength) + 1;
+  final int nFft = 8192;
+  final int hopLength = 1024;
+  final int spectrogramDurationSec = 2;
+  final int targetFrameHeight = 4096;
+  late final int targetFrameWidth = 32;
 
   final List<List<double>> _spectrogram = [];
 
@@ -41,7 +41,7 @@ class MicrophoneState extends ChangeNotifier {
 
   Future<void> init() async {
     await _microphoneService.init();
-    spectrogramBitmapState.init(bitmapHeight: targetFrameHeight, bitmapWidth: targetFrameWidth);
+    spectrogramBitmapState.init(bitmapHeight: targetFrameHeight, bitmapWidth: targetFrameWidth * 1);
   }
 
   Future<bool> requestPermission() async {
@@ -75,14 +75,14 @@ class MicrophoneState extends ChangeNotifier {
         _workerSendPort = message;
       } else if (message is SWSpectrogramFrameMessage) {
         // message.frame is List<List<double>> (batch of frames)
-        for (final frame in message.frame) {
+        for (final frame in message.window) {
           _spectrogram.add(List.from(frame));
           if (_spectrogram.length > _maxFrames) {
             _spectrogram.removeRange(0, _spectrogram.length - _maxFrames);
           }
         }
         // Send batch to bitmap state
-        spectrogramBitmapState.addFrames(message.frame);
+        spectrogramBitmapState.addFrames(message.window);
         notifyListeners();
       }
     });

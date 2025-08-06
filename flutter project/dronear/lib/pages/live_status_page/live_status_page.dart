@@ -67,7 +67,7 @@ class _LiveStatusPageState extends State<LiveStatusPage> {
             // const Expanded(child: SpectrogramHistogramWidget()),
             const Expanded(child: VolumeWidget()),
             const SizedBox(height: 8),
-            const Expanded(child: SpectrogramWidget()),
+            const Expanded(child: SpectrogramBitmapWidget()),
           ],
         ),
       ),

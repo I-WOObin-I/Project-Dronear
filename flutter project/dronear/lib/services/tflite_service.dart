@@ -12,11 +12,13 @@ class TfliteService {
   /// Load the model into memory and create the interpreter in the main isolate.
   Future<void> loadModel() async {
     try {
-      _modelBytes = (await rootBundle.load('assets/model_v7.tflite')).buffer.asUint8List();
+      logger.i('Loading TFLite model from assets...');
+      _modelBytes = (await rootBundle.load('assets/model_v7_w32.tflite')).buffer.asUint8List();
+      logger.i('TFLite model loaded from assets.');
       _interpreter = Interpreter.fromBuffer(_modelBytes!);
-      print('TFLite model loaded successfully.');
+      logger.i('TFLite model loaded successfully.');
     } catch (e) {
-      print('Error loading TFLite model: $e');
+      logger.e('Error loading TFLite model: $e');
     }
   }
 
@@ -24,7 +26,7 @@ class TfliteService {
   Future<Map<String, double>?> runInference(List<List<double>> inputData) async {
     if (_modelBytes == null) {
       logger.e('Model not loaded.');
-      return null;
+      return {'predictedClass': -1, 'confidence': -1.0};
     }
 
     // Set up isolate communication
@@ -56,7 +58,7 @@ class TfliteService {
     var output = List.filled(1 * 2, 0.0).reshape([1, 2]);
     interpreter.run(reshapedInput, output);
 
-    var outputList = output[0] as List<double>;
+    var outputList = output[0];
     final probabilities = _softmax(outputList);
 
     int predictedClass = 0;
@@ -69,15 +71,16 @@ class TfliteService {
     }
 
     interpreter.close();
+    logger.i(
+      'Inference completed: predictedClass=$predictedClass, confidence=$confidence, \t logits=$outputList',
+    );
 
     return {'predictedClass': predictedClass.toDouble(), 'confidence': confidence * 100.0};
   }
 
   /// Utility to reshape input for TFLite model: [H, W] -> [1, 1, H, W]
-  static List<List<List<List<double>>>> _reshapeInput(List<List<double>> input) {
-    return [
-      [input],
-    ];
+  static List<List<List<double>>> _reshapeInput(List<List<double>> input) {
+    return [input];
   }
 
   /// Softmax implementation for output probabilities

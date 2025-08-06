@@ -10,14 +10,14 @@ class RecogniserState extends ChangeNotifier {
 
   // The model's expected input dimensions.
   final int _requiredInputHeight = 4096; // Frequency Bins
-  final int _requiredInputWidth = 35; // Time Frames
+  final int _requiredInputWidth = 32; // Time Frames
 
   Stopwatch _inferenceStopwatch = Stopwatch();
 
   final List<List<double>> _spectrogramBuffer = [];
   Map<String, double>? _predictionResult;
   bool _isRecognising = false;
-  bool _recognitionEnabled = false;
+  bool _recognitionEnabled = true;
 
   RecogniserState(this._microphoneState) {
     _tfliteService.loadModel();
@@ -66,7 +66,7 @@ class RecogniserState extends ChangeNotifier {
     _predictionResult = await _tfliteService.runInference(inputData);
     _inferenceStopwatch.stop();
 
-    logger.i("[PERF] Inference time: ${_inferenceStopwatch.elapsedMilliseconds}ms");
+    // logger.i("[PERF] Inference time: ${_inferenceStopwatch.elapsedMilliseconds}ms");
 
     _inferenceStopwatch.reset();
 

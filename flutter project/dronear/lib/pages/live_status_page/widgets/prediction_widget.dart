@@ -23,17 +23,17 @@ class PredictionWidget extends StatelessWidget {
               Text(
                 recogniserState.predictedClass,
                 style: const TextStyle(
-                  fontSize: 36,
+                  fontSize: 26,
                   fontWeight: FontWeight.bold,
                   color: Colors.blue,
                 ),
               ),
-              const SizedBox(height: 10),
+              // const SizedBox(height: 10),
               // Display the confidence percentage.
               Text(
                 recogniserState.confidence,
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: 16,
                   fontWeight: FontWeight.w500,
                   color: Colors.grey[700],
                 ),

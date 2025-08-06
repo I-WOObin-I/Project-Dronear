@@ -14,8 +14,8 @@ class SWStopMessage {}
 
 /// Spectrogram Worker Spectrogram Frame Message
 class SWSpectrogramFrameMessage {
-  final List<List<double>> frame;
-  SWSpectrogramFrameMessage(this.frame);
+  final List<List<double>> window;
+  SWSpectrogramFrameMessage(this.window);
 }
 
 /// Spectrogram Worker Configuration
@@ -44,41 +44,58 @@ void spectrogramWorker(SWConfig config) async {
   final int targetFrameWidth = config.targetFrameWidth;
 
   final List<double> pcmBuffer = [];
-
-  // Buffer for frames until targetFrameWidth is reached
   final List<List<double>> frameBuffer = [];
+
+  int framesGenerated = 0; // Track how many frames have been generated
 
   await for (final message in workerReceivePort) {
     if (message is SWPcmDataMessage) {
       _appendRawPcmToBuffer(pcmBuffer, message.pcmBytes);
 
-      // Compute total possible frames
-      final int totalFrames = (pcmBuffer.length - nFft) ~/ hopLength + 1;
-      if (totalFrames < targetFrameWidth) continue;
-      // Compute frames from the beginning (not from the end!)
-      frameBuffer.clear();
-      for (
-        int frameIdx = 0;
-        frameIdx < totalFrames && frameBuffer.length < targetFrameWidth;
-        frameIdx++
-      ) {
+      // Ensure enough data for at least one frame
+      int maxStart = pcmBuffer.length - nFft;
+      if (maxStart < 0) continue; // Not enough samples for a single frame
+
+      // Calculate total possible frames from buffer
+      int totalFrames = (maxStart ~/ hopLength) + 1;
+
+      // Generate only the new frames
+      for (int frameIdx = framesGenerated; frameIdx < totalFrames; frameIdx++) {
         final start = frameIdx * hopLength;
+        if (start + nFft > pcmBuffer.length) break; // Safety check
         final window = pcmBuffer.sublist(start, start + nFft);
-        frameBuffer.add(_stftNormFrame(window, nFft, targetFrameHeight));
+        final frame = _stftNormFrame(window, nFft, targetFrameHeight);
+
+        frameBuffer.add(frame);
+
+        // Keep frameBuffer length at most targetFrameWidth (scrolling window)
+        if (frameBuffer.length > targetFrameWidth) {
+          frameBuffer.removeAt(0);
+        }
       }
 
-      // When we have enough frames, send the batch (guaranteed here)
-      if (frameBuffer.length == targetFrameWidth) {
-        config.masterReceivePort.send(
-          SWSpectrogramFrameMessage(List<List<double>>.from(frameBuffer)),
-        );
+      // Update framesGenerated to totalFrames
+      if (totalFrames > framesGenerated) {
+        framesGenerated = totalFrames;
+
+        // Only send if we have enough frames to fill the display
+        if (frameBuffer.length == targetFrameWidth) {
+          config.masterReceivePort.send(
+            SWSpectrogramFrameMessage(List<List<double>>.from(frameBuffer)),
+          );
+        }
       }
 
-      // Limit buffer size for safety (keep 10 seconds)
+      // Limit pcmBuffer size for safety (keep about 10 seconds of audio)
       const int maxPcmBuffer = 48000 * 10;
       if (pcmBuffer.length > maxPcmBuffer) {
         int removeCount = pcmBuffer.length - maxPcmBuffer;
         pcmBuffer.removeRange(0, removeCount);
+
+        // Adjust framesGenerated accordingly
+        int possibleFramesAfterTrim = ((pcmBuffer.length - nFft) ~/ hopLength) + 1;
+        framesGenerated = framesGenerated - (totalFrames - possibleFramesAfterTrim);
+        if (framesGenerated < 0) framesGenerated = 0;
       }
     } else if (message is SWStopMessage) {
       break;
