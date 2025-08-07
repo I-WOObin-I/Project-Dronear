@@ -13,7 +13,7 @@ class TfliteService {
   Future<void> loadModel() async {
     try {
       logger.i('Loading TFLite model from assets...');
-      _modelBytes = (await rootBundle.load('assets/model_v7_w32.tflite')).buffer.asUint8List();
+      _modelBytes = (await rootBundle.load('assets/model_v7_set3.tflite')).buffer.asUint8List();
       logger.i('TFLite model loaded from assets.');
       _interpreter = Interpreter.fromBuffer(_modelBytes!);
       logger.i('TFLite model loaded successfully.');
