@@ -38,13 +38,6 @@ class StatusButtonsWidget extends StatelessWidget {
             onPressed: () => _navigateToPage(context, 1),
           ),
           buildStatusButton(
-            label: 'EMAIL',
-            icon: Icons.mail,
-            isArmed: alertsState.getValue(AlertsState.emailAlertEnabledKey),
-            width: buttonWidth,
-            onPressed: () => _navigateToPage(context, 2),
-          ),
-          buildStatusButton(
             label: 'API',
             icon: Icons.settings_ethernet,
             isArmed: alertsState.getValue(AlertsState.httpApiAlertEnabledKey),

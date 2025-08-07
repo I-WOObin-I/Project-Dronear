@@ -49,8 +49,10 @@ class AlertsState with ChangeNotifier {
 
   static const Map<String, String> _defaultFields = {
     callAlertNumberKey: '',
+    callAlertLastKey: '',
     smsAlertNumberKey: '',
     smsAlertContentKey: 'Drone detected!',
+    smsAlertLastKey: '',
     emailAlertAddressKey: '',
     emailAlertSubjectKey: 'Drone Alert',
     emailAlertPayloadKey: 'A drone has been detected.',

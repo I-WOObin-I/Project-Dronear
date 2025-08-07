@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../nav/page_nav_info.dart';
 import 'package:provider/provider.dart';
 import '../../../state/alerts_state.dart';
+import '../../../state/call_state.dart';
 
 class AlertCallPage extends StatefulWidget implements NavPage {
   @override
@@ -34,6 +35,7 @@ class _AlertCallPageState extends State<AlertCallPage> {
 
     _numberController.addListener(() {
       context.read<AlertsState>().setField(AlertsState.callAlertNumberKey, _numberController.text);
+      context.read<CallState>().reset();
     });
     _loadSettings();
   }
@@ -54,7 +56,11 @@ class _AlertCallPageState extends State<AlertCallPage> {
     setState(() {
       lastCallTime = DateTime.now();
     });
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Test call initiated')));
+    CallState callState = context.read<CallState>();
+    callState.alertCall();
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Test call initiated')));
   }
 
   @override
@@ -98,12 +104,16 @@ class _AlertCallPageState extends State<AlertCallPage> {
               SwitchListTile(
                 title: const Text('Transmit sound'),
                 value: alertsState.getValue(AlertsState.callAlertTransmitSoundKey),
-                onChanged: (val) => alertsState.setValue(AlertsState.callAlertTransmitSoundKey, val),
+                onChanged: (val) =>
+                    alertsState.setValue(AlertsState.callAlertTransmitSoundKey, val),
                 contentPadding: EdgeInsets.zero,
               ),
 
               const Divider(),
-              const Text('Phone Number for Call Alert', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text(
+                'Phone Number for Call Alert',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 16),
               const Text(
                 'Enter the phone number to receive alert calls. Please include the country code (e.g., +1 for USA, +48 for Poland).',
@@ -126,7 +136,10 @@ class _AlertCallPageState extends State<AlertCallPage> {
                 label: const Text('Test Call'),
               ),
               const SizedBox(height: 24),
-              Text('Last call made: $formattedTime', style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic)),
+              Text(
+                'Last call made: $formattedTime',
+                style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
+              ),
             ],
           ),
         ),

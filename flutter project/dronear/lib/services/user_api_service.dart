@@ -37,19 +37,5 @@ class UserApiService {
     }
   }
 
-  /// Example: Send email through backend API
-  Future<bool> sendEmail({
-    required String recipient,
-    required String subject,
-    required String body,
-  }) async {
-    final result = await post(
-      '/send-email',
-      body: {'recipient': recipient, 'subject': subject, 'body': body},
-    );
-    // Adjust according to your backend's response structure
-    return result['success'] == true;
-  }
-
   /// Add other endpoint methods as needed...
 }

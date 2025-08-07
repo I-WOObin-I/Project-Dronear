@@ -90,6 +90,11 @@ class RecogniserState extends ChangeNotifier {
     return "${_predictionResult!['confidence']?.toStringAsFixed(1)}%";
   }
 
+  bool get recognitionPositive {
+    if (_predictionResult == null) return false;
+    return _predictionResult!['predictedClass']?.toInt() == 1;
+  }
+
   @override
   void dispose() {
     super.dispose();

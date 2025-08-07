@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../nav/page_nav_info.dart';
 import 'package:provider/provider.dart';
 import '../../../state/alerts_state.dart';
+import '../../../state/sms_state.dart';
 
 class AlertSmsPage extends StatefulWidget implements NavPage {
   @override
@@ -52,7 +53,11 @@ class _AlertSmsPageState extends State<AlertSmsPage> {
     setState(() {
       lastSmsSent = DateTime.now();
     });
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Test SMS sent')));
+    SmsState smsState = context.read<SmsState>();
+    smsState.testSms();
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('SMS not implemented yet')));
   }
 
   @override

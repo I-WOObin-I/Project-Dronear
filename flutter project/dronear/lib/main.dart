@@ -7,6 +7,8 @@ import 'state/alerts_state.dart';
 import 'state/microphone_state.dart';
 import 'state/recogniser_state.dart';
 import 'state/spectrogram_bitmap_state.dart';
+import 'state/call_state.dart';
+import 'state/sms_state.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +21,9 @@ void main() async {
     recognitionState: recogniserState,
   );
 
+  final callState = CallState(alertsState, recogniserState);
+  final smsState = SmsState(alertsState);
+
   await alertsState.init();
   await microphoneState.init();
 
@@ -29,6 +34,8 @@ void main() async {
         ChangeNotifierProvider<MicrophoneState>.value(value: microphoneState),
         ChangeNotifierProvider<RecogniserState>.value(value: recogniserState),
         ChangeNotifierProvider<SpectrogramBitmapState>.value(value: spectrogramBitmapState),
+        ChangeNotifierProvider<CallState>.value(value: callState),
+        ChangeNotifierProvider<SmsState>.value(value: smsState),
       ],
       child: const DroneDetectorApp(),
     ),

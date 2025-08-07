@@ -15,33 +15,6 @@ class UserApiState extends ChangeNotifier {
 
   UserApiState(this.api);
 
-  /// Example: Trigger sending email
-  Future<void> sendEmail({
-    required String recipient,
-    required String subject,
-    required String body,
-  }) async {
-    _status = ApiStatus.loading;
-    _error = null;
-    _lastData = null;
-    notifyListeners();
-
-    try {
-      bool result = await api.sendEmail(recipient: recipient, subject: subject, body: body);
-      if (result) {
-        _status = ApiStatus.success;
-        _lastData = result;
-      } else {
-        _status = ApiStatus.error;
-        _error = 'Email sending failed';
-      }
-    } catch (e) {
-      _status = ApiStatus.error;
-      _error = e.toString();
-    }
-    notifyListeners();
-  }
-
   /// Generic GET request
   Future<void> get(String endpoint) async {
     _status = ApiStatus.loading;
