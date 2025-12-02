@@ -22,6 +22,5 @@ A more robust solution would involve using open hardware platforms such as Ardui
 - **Mobile App:** Flutter for Android application development. With the assistance of GitHub Copilot, I was able to implement the app within a week despite having little prior experience with the framework.
 
 ---
-## Screenshot
 
 ![Screenshot](DroneEAR_screenshot.png)
