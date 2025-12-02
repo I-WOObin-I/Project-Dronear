@@ -21,6 +21,8 @@ A more robust solution would involve using open hardware platforms such as Ardui
 - **Audio Processing:** Librosa for spectrogram analysis, preprocessing, and dataset mixing.
 - **Mobile App:** Flutter for Android application development. With the assistance of GitHub Copilot, I was able to implement the app within a week despite having little prior experience with the framework.
 
+Flutter app repository: https://github.com/I-WOObin-I/Project-Dronear
+Training repository:    https://github.com/I-WOObin-I/Project-Dronear-Training
 ---
 
 ![Screenshot](DroneEAR_screenshot.png)
