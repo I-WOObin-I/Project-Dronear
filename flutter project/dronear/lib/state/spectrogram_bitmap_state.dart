@@ -65,10 +65,12 @@ class SpectrogramBitmapState extends ChangeNotifier {
     }
   }
 
+  // Invert the y axis so that low freqs are on bottom (y = _bitmapHeight - 1) and high on top (y = 0)
   void _putSpectrogramFrameToBitmap(List<double> frame) {
     for (int y = 0; y < _bitmapHeight; y++) {
       int color = _colorForDb(frame[y]);
-      int pixelOffset = (y * _bitmapWidth + _bitmapCurrentCollumn) * 4;
+      int invertedY = _bitmapHeight - 1 - y; // Flip y-axis
+      int pixelOffset = (invertedY * _bitmapWidth + _bitmapCurrentCollumn) * 4;
       _spectrogramBitmap[pixelOffset + 0] = (color >> 16) & 0xFF;
       _spectrogramBitmap[pixelOffset + 1] = (color >> 8) & 0xFF;
       _spectrogramBitmap[pixelOffset + 2] = color & 0xFF;
